@@ -1,0 +1,18 @@
+{
+  "name": "free-chazz",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com-ngeisel:nigeisel/free-chazz.git"
+  },
+  "author": "",
+  "license": "ISC"
+}
