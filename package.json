@@ -1,17 +1,15 @@
 {
   "name": "free-chazz",
   "version": "1.0.0",
-  "description": "",
+  "description": "free chess engine",
   "main": "main.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "dependencies": {
-
-  },
+  "dependencies": {},
   "repository": {
     "type": "git",
-    "url": "git@github.com-ngeisel:nigeisel/free-chazz.git"
+    "url": "git@github.com:nigeisel/free-chazz.git"
   },
   "author": "",
   "license": "ISC"

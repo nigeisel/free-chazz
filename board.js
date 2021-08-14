@@ -6,51 +6,50 @@ const terminalColorCodes = {
   resetCode: '\u001b[0m',
 }
 
-/**
- * Board
- * @property {Object.<string, Piece>} piecesByField - all Pieces currently on the board by their square such as 'A1'
- */
 class Board {
-  constructor () {
-    const pieces = [
-      new Rook(this,'white', Square.parse('A1')),
-      new Knight(this,'white', Square.parse('B1')),
-      new Bishop(this,'white',Square.parse('C1')),
-      new Queen(this,'white', Square.parse('D1')),
-      new King(this,'white', Square.parse('E1')),
-      new Bishop(this,'white',Square.parse('F1')),
-      new Knight(this,'white',Square.parse('G1')),
-      new Rook(this,'white', Square.parse('H1')),
-      new Pawn(this,'white', Square.parse('A2')),
-      new Pawn(this,'white', Square.parse('B2')),
-      new Pawn(this,'white', Square.parse('C2')),
-      new Pawn(this,'white', Square.parse('D2')),
-      new Pawn(this,'white', Square.parse('E2')),
-      new Pawn(this,'white', Square.parse('F2')),
-      new Pawn(this,'white', Square.parse('G2')),
-      new Pawn(this,'white', Square.parse('H2')),
-      new Rook(this,'black', Square.parse('A8')),
-      new Knight(this,'black', Square.parse('B8')),
-      new Bishop(this,'black', Square.parse('C8')),
-      new Queen(this,'black', Square.parse('D8')),
-      new King(this,'black', Square.parse('E8')),
-      new Bishop(this,'black', Square.parse('F8')),
-      new Knight(this,'black', Square.parse('G8')),
-      new Rook(this,'black', Square.parse('H8')),
-      new Pawn(this,'black', Square.parse('A7')),
-      new Pawn(this,'black', Square.parse('B7')),
-      new Pawn(this,'black', Square.parse('C7')),
-      new Pawn(this,'black', Square.parse('D7')),
-      new Pawn(this,'black', Square.parse('E7')),
-      new Pawn(this,'black', Square.parse('F7')),
-      new Pawn(this,'black', Square.parse('G7')),
-      new Pawn(this,'black', Square.parse('H7')),
-    ];
+  #piecesByColorAndField = {
+    white: {},
+    black: {},
+  }
 
-    this.piecesByField = {};
-    for (const piece of pieces) {
-      this.piecesByField[piece.square.toString()] = piece;
+  constructor(empty) {
+
+    if (!empty) {
+      this.#piecesByColorAndField['white']['A1'] = new Rook('white');
+      this.#piecesByColorAndField['white']['B1'] = new Knight('white');
+      this.#piecesByColorAndField['white']['C1'] = new Bishop('white');
+      this.#piecesByColorAndField['white']['D1'] = new Queen('white');
+      this.#piecesByColorAndField['white']['E1'] = new King('white');
+      this.#piecesByColorAndField['white']['F1'] = new Bishop('white');
+      this.#piecesByColorAndField['white']['G1'] = new Knight('white');
+      this.#piecesByColorAndField['white']['H1'] = new Rook('white');
+      this.#piecesByColorAndField['white']['A2'] = new Pawn('white');
+      this.#piecesByColorAndField['white']['B2'] = new Pawn('white');
+      this.#piecesByColorAndField['white']['C2'] = new Pawn('white');
+      this.#piecesByColorAndField['white']['D2'] = new Pawn('white');
+      this.#piecesByColorAndField['white']['E2'] = new Pawn('white');
+      this.#piecesByColorAndField['white']['F2'] = new Pawn('white');
+      this.#piecesByColorAndField['white']['G2'] = new Pawn('white');
+      this.#piecesByColorAndField['white']['H2'] = new Pawn('white');
+
+      this.#piecesByColorAndField['black']['A8'] = new Rook('black');
+      this.#piecesByColorAndField['black']['B8'] = new Knight('black');
+      this.#piecesByColorAndField['black']['C8'] = new Bishop('black');
+      this.#piecesByColorAndField['black']['D8'] = new Queen('black');
+      this.#piecesByColorAndField['black']['E8'] = new King('black');
+      this.#piecesByColorAndField['black']['F8'] = new Bishop('black');
+      this.#piecesByColorAndField['black']['G8'] = new Knight('black');
+      this.#piecesByColorAndField['black']['H8'] = new Rook('black');
+      this.#piecesByColorAndField['black']['A7'] = new Pawn('black');
+      this.#piecesByColorAndField['black']['B7'] = new Pawn('black');
+      this.#piecesByColorAndField['black']['C7'] = new Pawn('black');
+      this.#piecesByColorAndField['black']['D7'] = new Pawn('black');
+      this.#piecesByColorAndField['black']['E7'] = new Pawn('black');
+      this.#piecesByColorAndField['black']['F7'] = new Pawn('black');
+      this.#piecesByColorAndField['black']['G7'] = new Pawn('black');
+      this.#piecesByColorAndField['black']['H7'] = new Pawn('black');
     }
+
   }
 
   /**
@@ -61,13 +60,13 @@ class Board {
    *                                undefined if square is out of bounds of the chess board
    */
   getPiece(square) {
-    if (!square) {
-      console.warn(square)
-    }
     if (!square.isInBoard()) {
       return undefined;
     }
-    return this.piecesByField[square.toString()] || null;
+
+    return this.#piecesByColorAndField['white'][square.toString()] ||
+        this.#piecesByColorAndField['black'][square.toString()] ||
+        null;
   }
 
   print() {
@@ -76,12 +75,12 @@ class Board {
     const files = Array.from({ length: 8 }, (_, i) => String.fromCharCode('A'.charCodeAt(0) + i));
     const ranks = Array.from({ length: 8 }, (max, i) => (i + 1).toString()).reverse();
 
-    let squareColor = 'black';
+    let squareColor = 'white';
     for (const rank of ranks) {
       process.stdout.write(rank + ' ');
       for (const file of files) {
-        const square = file + rank;
-        const piece = this.piecesByField[square];
+        const square = Square.parse(file, rank);
+        const piece = this.getPiece(square);
 
         if (squareColor === 'black') {
           process.stdout.write(terminalColorCodes.blackSquare);
@@ -109,7 +108,6 @@ class Board {
     }
 
     process.stdout.write('\n');
-
   }
 
   /**
@@ -117,12 +115,11 @@ class Board {
    * @return {number} negative if black has material advantage, positive if white has material advantage
    */
   evaluatePosition() {
-    return Object.values(this.piecesByField)
-        .reduce(
-            (combined, current) =>
-                current.color === 'black' ? combined - current.value : combined + current.value,
-            0
-        );
+    const sumWhitePieces = Object.values(this.#piecesByColorAndField['white'])
+        .reduce((combined, current) => combined + current.value, 0);
+    const sumBlackPieces = Object.values(this.#piecesByColorAndField['black'])
+        .reduce((combined, current) => combined + current.value, 0);
+    return sumWhitePieces - sumBlackPieces;
   }
 
   /**
@@ -132,16 +129,9 @@ class Board {
    * @return {Array.<Move>} list of legal moves
    */
   getLegalMoves(color) {
-    const moves = [];
-    for (const piece of Object.values(this.piecesByField)) {
-      if (piece.color !== color) {
-        continue;
-      }
-      const pieceLegalMoves = piece.getLegalMoves();
-      moves.push(...pieceLegalMoves);
-    }
-
-    return moves;
+    return Object.entries(this.#piecesByColorAndField[color])
+      .flatMap(([square, piece]) =>
+          piece.getLegalMoves(this, Square.parse(square)));
   }
 
   /**
@@ -152,13 +142,16 @@ class Board {
    * @return {Boolean} true if the move is legal in current position
    */
   isLegal(triedMove, color) {
+    if (!triedMove) {
+      console.log('s')
+    }
     const piece = this.getPiece(triedMove.from);
     if (piece.color !== color) {
       return false;
     }
 
     return piece
-        .getLegalMoves()
+        .getLegalMoves(this, triedMove.from)
         .some((legalMove) => {
           return legalMove.equals(triedMove)
         });
@@ -176,20 +169,44 @@ class Board {
       throw new Error('Illegal Move.');
     }
 
-    this.piecesByField[move.to.toString()] = this.piecesByField[move.from.toString()];
-    this.piecesByField[move.to.toString()].move(move.to);
-    delete this.piecesByField[move.from.toString()];
+    this.#piecesByColorAndField[color][move.to.toString()] = this.#piecesByColorAndField[color][move.from.toString()];
+
+    delete this.#piecesByColorAndField[color][move.from.toString()];
+
+    if (this.#piecesByColorAndField[color === 'white' ? 'black' : 'white'][move.to.toString()]) {
+      delete this.#piecesByColorAndField[color === 'white' ? 'black' : 'white'][move.to.toString()];
+    }
+
   }
 
-  // /**
-  //  *
-  //  * @param move
-  //  * @param color
-  //  * @return {Board} copy of the board with the move executed
-  //  */
-  // moveCopy(move, color) {
-  //
-  // }
+  /**
+   * return a copy of this board
+   *
+   * @return {Board} - deep copy of this instance
+   */
+  copy() {
+    const board = new Board(true);
+    for (const [square, whitePiece] of Object.entries(this.#piecesByColorAndField['white'])) {
+      board.#piecesByColorAndField['white'][square] = whitePiece.copy();
+    }
+    for (const [square, blackPiece] of Object.entries(this.#piecesByColorAndField['black'])) {
+      board.#piecesByColorAndField['black'][square] = blackPiece.copy();
+    }
+
+    return board;
+  }
+
+  /**
+   *
+   * @param move
+   * @param color
+   * @return {Board} copy of the board with the move executed
+   */
+  moveOnCopy(move, color) {
+    const board = this.copy();
+    board.move(move, color);
+    return board;
+  }
 }
 
 class Move {
@@ -293,10 +310,11 @@ class Square {
       if (typeof file !== 'string' || file.length !== 2) {
         throw new Error('Either pass file/rank separately or just the square as a string formatted as "A1", got ' + file);
       }
-      rank = parseInt(file[1]);
+      rank = file[1];
       file = file[0].toUpperCase();
-      fileNumeric = file.charCodeAt(0) - 64;
     }
+
+    rank = parseInt(rank);
 
     if (!Number.isInteger(rank)) {
       throw new Error('Expects rank to be an Integer such as 1,2,...,8.');
@@ -310,6 +328,7 @@ class Square {
         throw new Error('Unexpected file length. Expects one character such as A,B,...,H')
       }
       file = file.toUpperCase();
+      fileNumeric = file.charCodeAt(0) - 64;
     } else {
       throw new Error('Unexpected file type (expects either character or number).')
     }
@@ -329,97 +348,101 @@ class Piece {
   /**
    * @constructor
    *
-   * @param {Board} board
    * @param {'black' | 'white'} color
-   * @param {Square} square
    */
-  constructor(board, color, square) {
-    this.board = board;
+  constructor(color) {
     this.color = color;
-    this.square = square;
   }
 
   /**
-   * Move piece to a square
-   *
-   * @param {Square} to
+   * returns a copy of the piece
+   * @return {Piece}
    */
-  move(to) {
-    this.square = to;
+  copy() {
+    return new this.constructor(this.color);
   }
 
   /**
    * Return all legal Moves for the Piece in the current position
    *
+   * @param {Board} board - the board the piece is on
+   * @param {Square} square - the square the piece is on
    * @return {Array.<Move>}
    */
-  getLegalMoves() {
+  getLegalMoves(board, square) {
     throw new Error('Implement in subclass');
   }
 
-  _getDiagonalMoves() {
+  /**
+   * return bishop-like indefinite diagonal moves
+   *
+   * @param {Board} board - the board the piece is on
+   * @param {Square} square - the square the piece is on
+   * @return {Array.<Move>}
+   */
+  _getDiagonalMoves(board, square) {
     const moves = [];
 
     for (let moveFile = 1, moveRank = 1;
-         this.square.fileNumeric + moveFile <= 8 && this.square.rank + moveRank <= 8; moveFile++, moveRank++) {
+         square.fileNumeric + moveFile <= 8 && square.rank + moveRank <= 8; moveFile++, moveRank++) {
 
-      const targetSquare = Square.parse(this.square.fileNumeric + moveFile, this.square.rank + moveRank);
-      const piece = this.board.getPiece(targetSquare);
+      const targetSquare = Square.parse(square.fileNumeric + moveFile, square.rank + moveRank);
+      const piece = board.getPiece(targetSquare);
 
       if (piece === null) {
-        moves.push(new Move(this.square, targetSquare, {capture: false}));
+        moves.push(new Move(square, targetSquare, {capture: false}));
       } else if (piece.color === this.color) {
         break;
       } else {
-        moves.push(new Move(this.square, targetSquare, {capture: true}));
+        moves.push(new Move(square, targetSquare, {capture: true}));
         break;
       }
     }
 
     for (let moveFile = -1, moveRank = 1;
-         this.square.fileNumeric + moveFile >= 1 && this.square.rank + moveRank <= 8; moveFile--, moveRank++) {
+         square.fileNumeric + moveFile >= 1 && square.rank + moveRank <= 8; moveFile--, moveRank++) {
 
-      const targetSquare = Square.parse(this.square.fileNumeric + moveFile, this.square.rank + moveRank);
-      const piece = this.board.getPiece(targetSquare);
+      const targetSquare = Square.parse(square.fileNumeric + moveFile, square.rank + moveRank);
+      const piece = board.getPiece(targetSquare);
 
       if (piece === null) {
-        moves.push(new Move(this.square, targetSquare, {capture: false}));
+        moves.push(new Move(square, targetSquare, {capture: false}));
       } else if (piece.color === this.color) {
         break;
       } else {
-        moves.push(new Move(this.square, targetSquare, {capture: true}));
+        moves.push(new Move(square, targetSquare, {capture: true}));
         break;
       }
     }
 
     for (let moveFile = -1, moveRank = -1;
-         this.square.fileNumeric + moveFile >= 1 && this.square.rank + moveRank >= 1; moveFile--, moveRank--) {
+         square.fileNumeric + moveFile >= 1 && square.rank + moveRank >= 1; moveFile--, moveRank--) {
 
-      const targetSquare = Square.parse(this.square.fileNumeric + moveFile, this.square.rank + moveRank);
-      const piece = this.board.getPiece(targetSquare);
+      const targetSquare = Square.parse(square.fileNumeric + moveFile, square.rank + moveRank);
+      const piece = board.getPiece(targetSquare);
 
       if (piece === null) {
-        moves.push(new Move(this.square, targetSquare, {capture: false}));
+        moves.push(new Move(square, targetSquare, {capture: false}));
       } else if (piece.color === this.color) {
         break;
       } else {
-        moves.push(new Move(this.square, targetSquare, {capture: true}));
+        moves.push(new Move(square, targetSquare, {capture: true}));
         break;
       }
     }
 
     for (let moveFile = 1, moveRank = -1;
-         this.square.fileNumeric + moveFile <= 8 && this.square.rank + moveRank >= 1; moveFile++, moveRank--) {
+         square.fileNumeric + moveFile <= 8 && square.rank + moveRank >= 1; moveFile++, moveRank--) {
 
-      const targetSquare = Square.parse(this.square.fileNumeric + moveFile, this.square.rank + moveRank);
-      const piece = this.board.getPiece(targetSquare);
+      const targetSquare = Square.parse(square.fileNumeric + moveFile, square.rank + moveRank);
+      const piece = board.getPiece(targetSquare);
 
       if (piece === null) {
-        moves.push(new Move(this.square, targetSquare, {capture: false}));
+        moves.push(new Move(square, targetSquare, {capture: false}));
       } else if (piece.color === this.color) {
         break;
       } else {
-        moves.push(new Move(this.square, targetSquare, {capture: true}));
+        moves.push(new Move(square, targetSquare, {capture: true}));
         break;
       }
     }
@@ -427,57 +450,64 @@ class Piece {
     return moves;
   }
 
-  _getStraightMoves() {
+  /**
+   * return rook-like indefinite straight moves
+   *
+   * @param {Board} board - the board the piece is on
+   * @param {Square} square - the square the piece is on
+   * @return {Array.<Move>}
+   */
+  _getStraightMoves(board, square) {
     const moves = [];
 
-    for (let moveFile = this.square.fileNumeric + 1; moveFile <= 8; moveFile++) {
-      const targetSquare = Square.parse(moveFile, this.square.rank);
-      const piece = this.board.getPiece(targetSquare);
+    for (let moveFile = square.fileNumeric + 1; moveFile <= 8; moveFile++) {
+      const targetSquare = Square.parse(moveFile, square.rank);
+      const piece = board.getPiece(targetSquare);
       if (piece === null) {
-        moves.push(new Move(this.square, targetSquare, {capture: false}));
+        moves.push(new Move(square, targetSquare, {capture: false}));
       } else if (piece.color === this.color) {
         break;
       } else {
-        moves.push(new Move(this.square, targetSquare, {capture: true}));
+        moves.push(new Move(square, targetSquare, {capture: true}));
         break;
       }
     }
 
-    for (let moveFile = this.fileNumeric - 1; moveFile >= 1; moveFile--) {
-      const targetSquare = Square.parse(moveFile, this.square.rank);
-      const piece = this.board.getPiece(targetSquare);
+    for (let moveFile = square.fileNumeric - 1; moveFile >= 1; moveFile--) {
+      const targetSquare = Square.parse(moveFile, square.rank);
+      const piece = board.getPiece(targetSquare);
       if (piece === null) {
-        moves.push(new Move(this.square, targetSquare, {capture: false}));
+        moves.push(new Move(square, targetSquare, {capture: false}));
       } else if (piece.color === this.color) {
         break;
       } else {
-        moves.push(new Move(this.square, targetSquare, {capture: true}));
+        moves.push(new Move(square, targetSquare, {capture: true}));
         break;
       }
     }
 
-    for (let moveRank = this.square.rank + 1; moveRank <= 8; moveRank++) {
-      const targetSquare = Square.parse(this.square.fileNumeric, moveRank);
-      const piece = this.board.getPiece(targetSquare);
+    for (let moveRank = square.rank + 1; moveRank <= 8; moveRank++) {
+      const targetSquare = Square.parse(square.fileNumeric, moveRank);
+      const piece = board.getPiece(targetSquare);
       if (piece === null) {
-        moves.push(new Move(this.square, targetSquare, {capture: false}));
+        moves.push(new Move(square, targetSquare, {capture: false}));
       } else if (piece.color === this.color) {
         break;
       } else {
-        moves.push(new Move(this.square, targetSquare, {capture: true}));
+        moves.push(new Move(square, targetSquare, {capture: true}));
         break;
       }
     }
 
-    for (let moveRank = this.square.rank - 1; moveRank >= 8; moveRank--) {
-      const targetSquare = Square.parse(this.square.fileNumeric, moveRank);
-      const piece = this.board.getPiece(targetSquare);
+    for (let moveRank = square.rank - 1; moveRank >= 8; moveRank--) {
+      const targetSquare = Square.parse(square.fileNumeric, moveRank);
+      const piece = board.getPiece(targetSquare);
       if (piece === null) {
-        moves.push(new Move(this.square, targetSquare, {capture: false}));
+        moves.push(new Move(square, targetSquare, {capture: false}));
       } else if (piece.color === this.color) {
         break;
       } else {
-        moves.push(new Move(this.square, targetSquare, {capture: true}));
+        moves.push(new Move(square, targetSquare, {capture: true}));
         break;
       }
     }
@@ -492,17 +522,16 @@ class Piece {
 
 class Pawn extends Piece {
 
-  constructor(board, color, square) {
-    super(board, color, square);
+  constructor(color) {
+    super(color);
     this.value = 1;
-    this.hasMoved = false;
     this.hasMovedLastMove = false;
   }
 
-  move(to) {
-    super.move(to);
-    this.hasMoved = true;
-    this.hasMovedLastMove = true; // TODO unset after next move?
+  copy() {
+    const copy = super.copy();
+    copy.hasMovedLastMove = this.hasMovedLastMove;
+    return copy;
   }
 
   print() {
@@ -518,36 +547,42 @@ class Pawn extends Piece {
   /**
    * Return all legal Moves for the Pawn in the current position
    *
+   * @param {Board} board - the board the piece is on
+   * @param {Square} square - the square the piece is on
    * @return {Array.<Move>}
    */
-  getLegalMoves() {
+  getLegalMoves(board, square) {
     const moves = [];
 
     const moveDir = this.color === 'white' ? 1 : -1;
 
-    const targetSquare = Square.parse(this.square.fileNumeric, this.square.rank + moveDir);
-    const targetSquareTwoSteps = Square.parse(this.square.fileNumeric, this.square.rank + (moveDir * 2));
+    const targetSquare = Square.parse(square.fileNumeric, square.rank + moveDir);
+    const targetSquareTwoSteps = Square.parse(square.fileNumeric, square.rank + (moveDir * 2));
 
-    if (this.board.getPiece(targetSquare) === null) {
-      moves.push(new Move(this.square, targetSquare, {capture: false}));
+    if (board.getPiece(targetSquare) === null) {
+      moves.push(new Move(square, targetSquare, {capture: false}));
 
-      if (!this.hasMoved && this.board.getPiece(targetSquareTwoSteps) === null) {
-        moves.push(new Move(this.square, targetSquareTwoSteps, {capture: false}));
+      const hasNotYetMoved =
+          (this.color === 'white' && square.rank === 2) ||
+          (this.color === 'black' && square.rank === 7)
+
+      if (hasNotYetMoved && board.getPiece(targetSquareTwoSteps) === null) {
+        moves.push(new Move(square, targetSquareTwoSteps, {capture: false}));
       }
     }
 
-    const targetSquareCaptureLeft = Square.parse(this.square.fileNumeric + 1, this.square.rank + moveDir);
-    const targetPieceCaptureLeft = this.board.getPiece(targetSquareCaptureLeft);
+    const targetSquareCaptureLeft = Square.parse(square.fileNumeric + 1, square.rank + moveDir);
+    const targetPieceCaptureLeft = board.getPiece(targetSquareCaptureLeft);
 
     if (targetPieceCaptureLeft && targetPieceCaptureLeft.color !== this.color) {
-      moves.push(new Move(this.square, targetSquareCaptureLeft, {capture: true}));
+      moves.push(new Move(square, targetSquareCaptureLeft, {capture: true}));
     }
 
-    const targetSquareCaptureRight = Square.parse(this.square.fileNumeric - 1, this.square.rank + moveDir);
-    const targetPieceCaptureRight = this.board.getPiece(targetSquareCaptureRight);
+    const targetSquareCaptureRight = Square.parse(square.fileNumeric - 1, square.rank + moveDir);
+    const targetPieceCaptureRight = board.getPiece(targetSquareCaptureRight);
 
     if (targetPieceCaptureRight && targetPieceCaptureRight.color !== this.color) {
-      moves.push(new Move(this.square, targetSquareCaptureRight, {capture: true}));
+      moves.push(new Move(square, targetSquareCaptureRight, {capture: true}));
     }
 
     return moves;
@@ -558,8 +593,8 @@ class Pawn extends Piece {
 
 class Bishop extends Piece {
 
-  constructor(board, color, square) {
-    super(board, color, square);
+  constructor(color) {
+    super(color);
     this.value = 3;
   }
 
@@ -576,17 +611,19 @@ class Bishop extends Piece {
   /**
    * Return all legal Moves for the Bishop in the current position
    *
+   * @param {Board} board - the board the piece is on
+   * @param {Square} square - the square the piece is on
    * @return {Array.<Move>}
    */
-  getLegalMoves() {
-    return this._getDiagonalMoves();
+  getLegalMoves(board, square) {
+    return this._getDiagonalMoves(board, square);
   }
 }
 
 class Knight extends Piece {
 
-  constructor(board, color, square) {
-    super(board, color, square);
+  constructor(color) {
+    super(color);
     this.value = 3;
   }
 
@@ -604,26 +641,28 @@ class Knight extends Piece {
   /**
    * Return all legal Moves for the Knight in the current position
    *
+   * @param {Board} board - the board the piece is on
+   * @param {Square} square - the square the piece is on
    * @return {Array.<Move>}
    */
-  getLegalMoves() {
+  getLegalMoves(board, square) {
     const moves = [];
     for (const longMove of [-2, 2]) {
       for (const shortMove of [-1, 1]) {
 
-        const targetSquareA = Square.parse(this.square.fileNumeric + longMove, this.square.rank + shortMove);
-        let piece = this.board.getPiece(targetSquareA);
+        const targetSquareA = Square.parse(square.fileNumeric + longMove, square.rank + shortMove);
+        let piece = board.getPiece(targetSquareA);
 
         // TODO put in function canBeCaptured? ()
         if (piece !== undefined && (piece === null || piece.color !== this.color)) {
-          moves.push(new Move(this.square, targetSquareA, {capture: piece !== null}));
+          moves.push(new Move(square, targetSquareA, {capture: piece !== null}));
         }
 
-        const targetSquareB = Square.parse(this.square.fileNumeric + shortMove, this.square.rank + longMove);
-        piece = this.board.getPiece(targetSquareB);
+        const targetSquareB = Square.parse(square.fileNumeric + shortMove, square.rank + longMove);
+        piece = board.getPiece(targetSquareB);
 
         if (piece !== undefined && (piece === null || piece.color !== this.color)) {
-          moves.push(new Move(this.square, targetSquareB, {capture: piece !== null}));
+          moves.push(new Move(square, targetSquareB, {capture: piece !== null}));
         }
       }
     }
@@ -633,8 +672,8 @@ class Knight extends Piece {
 }
 
 class Rook extends Piece {
-  constructor(board, color, square) {
-    super(board, color, square);
+  constructor(color) {
+    super(color);
     this.value = 5;
   }
 
@@ -651,16 +690,18 @@ class Rook extends Piece {
   /**
    * Return all legal Moves for the Rook in the current position
    *
+   * @param {Board} board - the board the piece is on
+   * @param {Square} square - the square the piece is on
    * @return {Array.<Move>}
    */
-  getLegalMoves() {
-    return this._getStraightMoves();
+  getLegalMoves(board, square) {
+    return this._getStraightMoves(board, square);
   }
 }
 
 class Queen extends Piece {
-  constructor(board, color, square) {
-    super(board, color, square);
+  constructor(color) {
+    super(color);
     this.value = 9;
   }
 
@@ -677,16 +718,19 @@ class Queen extends Piece {
   /**
    * Return all legal Moves for the Queen in the current position
    *
+   * @param {Board} board - the board the piece is on
+   * @param {Square} square - the square the piece is on
    * @return {Array.<Move>}
    */
-  getLegalMoves() {
-    return [...this._getDiagonalMoves(), ...this._getStraightMoves()];
+  getLegalMoves(board, square) {
+    return [...this._getDiagonalMoves(board, square),
+      ...this._getStraightMoves(board, square)];
   }
 }
 
 class King extends Piece {
-  constructor(board, color, square) {
-    super(board, color, square);
+  constructor(color) {
+    super(color);
     this.value = 1000;
   }
 
@@ -703,9 +747,11 @@ class King extends Piece {
   /**
    * Return all legal Moves for the King in the current position
    *
+   * @param {Board} board - the board the piece is on
+   * @param {Square} square - the square the piece is on
    * @return {Array.<Move>}
    */
-  getLegalMoves() {
+  getLegalMoves(board, square) {
     // TODO implement check
     const moves = []
 
@@ -718,11 +764,11 @@ class King extends Piece {
           continue;
         }
 
-        const targetSquare = Square.parse(this.square.fileNumeric + moveFile, this.square.rank + moveRank);
-        const piece = this.board.getPiece(targetSquare);
+        const targetSquare = Square.parse(square.fileNumeric + moveFile, square.rank + moveRank);
+        const piece = board.getPiece(targetSquare);
         if (piece !== undefined) {
           if (piece === null || piece.color !== this.color) {
-            moves.push(new Move(this.square, targetSquare, {capture: piece !== null}));
+            moves.push(new Move(square, targetSquare, {capture: piece !== null}));
           }
         }
 

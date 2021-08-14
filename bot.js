@@ -7,11 +7,11 @@ class PositionTree {
     this.color = color;
   }
 
-  buildLevel() {
+  evaluateLevel() {
     const legalMoves = this.board.getLegalMoves(this.color);
     for (const legalMove of legalMoves) {
-      // const tempBoard = this.board.moveCopy(legalMove);
-      this.children.push(legalMove);
+      const node = new PositionTree(this.board.moveCopy(legalMove), this.color === 'white' ? 'black' : 'white');
+      this.children.push(node);
     }
   };
 }
@@ -35,6 +35,36 @@ class Bot {
   async getMove() {
 
     const legalMoves = this.board.getLegalMoves(this.color);
+
+    let bestMoves = [];
+    let bestEvaluation;
+    if (this.color === 'white') {
+      bestEvaluation = -Number.MAX_SAFE_INTEGER;
+    } else {
+      bestEvaluation = Number.MAX_SAFE_INTEGER
+    }
+
+    for (const legalMove of legalMoves) {
+      const tempBoard = this.board.copy();
+      tempBoard.move(legalMove, this.color);
+      const evaluation = tempBoard.evaluatePosition();
+      if (this.color === 'white') {
+        if (evaluation > bestEvaluation) {
+          bestEvaluation = evaluation;
+          bestMoves = [legalMove];
+        } else if (evaluation === bestEvaluation) {
+          bestMoves.push(legalMove);
+        }
+      } else {
+        if (evaluation < bestEvaluation) {
+          bestEvaluation = evaluation;
+          bestMoves = [legalMove];
+        } else if (evaluation === bestEvaluation) {
+          bestMoves.push(legalMove);
+        }
+      }
+    }
+
     // for (const legalMove of legalMoves) {
     //   // const tempBoard = this.board.moveCopy(legalMove);
     //   this.board.move(legalMove, this.color);
@@ -51,10 +81,12 @@ class Bot {
     //   }
     // }
 
-    if (legalMoves.length === 0) {
+    if (bestMoves.length === 0) {
+      console.log(this.color)
+      process.exit(1)
       throw new Error('game over?');
     }
-    return legalMoves[Math.floor(Math.random() * legalMoves.length)];
+    return bestMoves[Math.floor(Math.random() * bestMoves.length)];
   }
 }
 
