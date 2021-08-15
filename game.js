@@ -3,16 +3,8 @@ const {Bot} = require('./bot');
 
 class Game {
   constructor() {
-    const {Square} = require('./board');
-
     this.board = new Board();
     this.board.print();
-    let piece1 = this.board.getPiece(Square.parse('B1'));
-
-    const test = this.board.copy();
-    test.print();
-    let piece2 = test.getPiece(Square.parse('B1'));
-    this.colorTurn = 'white';
     this.gameOver = false;
 
     this.bot = new Bot(this.board, 'black');
@@ -20,8 +12,11 @@ class Game {
   }
 
   makeMove(move) {
-    this.board.move(move, this.colorTurn);
-    this.colorTurn = this.colorTurn === 'white' ? 'black' : 'white';
+    if (this.board.isLegal(move)) {
+      this.board.move(move);
+    } else {
+      throw new Error('Illegal Move.');
+    }
   }
 
   /**
@@ -30,8 +25,8 @@ class Game {
    */
   async waitForMove() {
 
-    await new Promise(resolve => setTimeout(resolve, 0));
-    if (this.colorTurn === 'white') {
+    await new Promise(resolve => setTimeout(resolve, 500));
+    if (this.board.colorTurn === 'white') {
       const readline = require('readline');
 
       const rl = readline.createInterface({
@@ -40,7 +35,7 @@ class Game {
       });
 
       return new Promise((resolve, reject) => {
-        rl.question(this.colorTurn + '\'s move: ', (move) => {
+        rl.question(this.board.colorTurn + '\'s move: ', (move) => {
           rl.close();
           try {
             const moveParsed = Move.parse(move);
@@ -58,8 +53,7 @@ class Game {
   }
 
   async start() {
-    while (!this.gameOver) {
-
+    do {
       try {
         const move = await this.waitForMove();
         this.makeMove(move);
@@ -68,7 +62,7 @@ class Game {
       } catch (err) {
         console.warn(err);
       }
-    }
+    } while (!this.board.isGameOver().gameOver);
   }
 }
 

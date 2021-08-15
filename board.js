@@ -12,6 +12,8 @@ class Board {
     black: {},
   }
 
+  #cachedLegalMoves = {};
+
   constructor(empty) {
 
     if (!empty) {
@@ -48,6 +50,10 @@ class Board {
       this.#piecesByColorAndField['black']['F7'] = new Pawn('black');
       this.#piecesByColorAndField['black']['G7'] = new Pawn('black');
       this.#piecesByColorAndField['black']['H7'] = new Pawn('black');
+
+      this.colorTurn = 'white';
+      this.colorOpponent = 'black';
+      this.moveCount = 1;
     }
 
   }
@@ -125,28 +131,62 @@ class Board {
   /**
    * Returns a list of all legal moves for a color in the current position
    *
-   * @param {'white' | 'black'} color
+   * @param {'white' | 'black'?} color
    * @return {Array.<Move>} list of legal moves
    */
-  getLegalMoves(color) {
-    return Object.entries(this.#piecesByColorAndField[color])
-      .flatMap(([square, piece]) =>
-          piece.getLegalMoves(this, Square.parse(square)));
+  getLegalMoves() {
+    const cached = this.#getCachedLegalMoves();
+    if (cached) {
+      return cached;
+    }
+
+    const moves = this.#getMoves();
+
+    const legalMoves = moves.filter((move) => {
+      const tempBoard = this.copy();
+      tempBoard.move(move);
+      return !tempBoard.isInCheck(true);
+    });
+
+    this.#setCachedLegalMoves(legalMoves);
+
+    return legalMoves;
   }
+
+  #getMoves(color) {
+    return Object.entries(this.#piecesByColorAndField[color || this.colorTurn])
+        .flatMap(([square, piece]) =>
+            piece.getLegalMoves(this, Square.parse(square)));
+  }
+
+  #getCachedLegalMoves() {
+    if (this.#cachedLegalMoves[this.moveCount] && this.#cachedLegalMoves[this.moveCount][this.colorTurn]) {
+      return this.#cachedLegalMoves[this.moveCount][this.colorTurn];
+    }
+  }
+
+  #setCachedLegalMoves(moves) {
+    if (Object.keys(this.#cachedLegalMoves).length > 6) {
+      const oldestCached = Math.min(...Object.values(this.#cachedLegalMoves));
+      delete this.#cachedLegalMoves[oldestCached];
+    }
+
+    if (!this.#cachedLegalMoves[this.moveCount]) {
+      this.#cachedLegalMoves[this.moveCount] = {};
+    }
+    this.#cachedLegalMoves[this.moveCount][this.colorTurn] = moves;
+  }
+
 
   /**
    * Return if the move is legal
    *
    * @param {Move} triedMove
-   * @param {'black' | 'white'} color
    * @return {Boolean} true if the move is legal in current position
    */
-  isLegal(triedMove, color) {
-    if (!triedMove) {
-      console.log('s')
-    }
+  isLegal(triedMove) {
     const piece = this.getPiece(triedMove.from);
-    if (piece.color !== color) {
+    if (piece.color !== this.colorTurn) {
       return false;
     }
 
@@ -160,23 +200,26 @@ class Board {
   /**
    * Execute a move
    *
-   * @throws {Error} if the move is not legal
    * @param {Move} move
-   * @param {'black' | 'white'} color
    */
-  move(move, color) {
-    if (!this.isLegal(move, color)) {
-      throw new Error('Illegal Move.');
+  move(move) {
+
+    this.#piecesByColorAndField[this.colorTurn][move.to.toString()]
+        = this.#piecesByColorAndField[this.colorTurn][move.from.toString()];
+
+    delete this.#piecesByColorAndField[this.colorTurn][move.from.toString()];
+
+    if (this.#piecesByColorAndField[this.colorOpponent][move.to.toString()]) {
+      delete this.#piecesByColorAndField[this.colorOpponent][move.to.toString()];
     }
 
-    this.#piecesByColorAndField[color][move.to.toString()] = this.#piecesByColorAndField[color][move.from.toString()];
+    this.#switchTurn();
+  }
 
-    delete this.#piecesByColorAndField[color][move.from.toString()];
-
-    if (this.#piecesByColorAndField[color === 'white' ? 'black' : 'white'][move.to.toString()]) {
-      delete this.#piecesByColorAndField[color === 'white' ? 'black' : 'white'][move.to.toString()];
-    }
-
+  #switchTurn() {
+    this.colorTurn = this.colorTurn === 'white' ? 'black' : 'white';
+    this.colorOpponent = this.colorOpponent === 'white' ? 'black' : 'white';
+    this.moveCount += this.colorTurn === 'white' ? 1 : 0;
   }
 
   /**
@@ -186,6 +229,9 @@ class Board {
    */
   copy() {
     const board = new Board(true);
+    board.colorTurn = this.colorTurn;
+    board.colorOpponent = this.colorOpponent;
+    board.moveCount = this.moveCount;
     for (const [square, whitePiece] of Object.entries(this.#piecesByColorAndField['white'])) {
       board.#piecesByColorAndField['white'][square] = whitePiece.copy();
     }
@@ -197,15 +243,42 @@ class Board {
   }
 
   /**
-   *
-   * @param move
-   * @param color
-   * @return {Board} copy of the board with the move executed
+   * returns whether the player who's turn it is, is in check
+   * @param {boolean?} switchPlayer if true, checks whether the player who's turn it is could capture the opponent's king
+   * @return {boolean}
    */
-  moveOnCopy(move, color) {
-    const board = this.copy();
-    board.move(move, color);
-    return board;
+  isInCheck(switchPlayer) {
+    const moves = this.#getMoves(switchPlayer ? this.colorTurn :this.colorOpponent);
+    for (const move of moves) {
+      if (move.capture) {
+        const capturePiece = this.getPiece(move.to);
+        if (capturePiece.constructor.name === 'King') {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  isGameOver() {
+    // TODO draw by repetition / missing material
+    if (this.getLegalMoves().length === 0) {
+      if (this.isInCheck(this.colorOpponent)) {
+        return {
+          gameOver: true,
+          result: 'won',
+          reason: 'checkmate',
+          winner: this.colorOpponent,
+        };
+      } else {
+        return {
+          gameOver: true,
+          result: 'draw',
+          reason: 'stalemate',
+        }
+      }
+    }
+    return {gameOver: false};
   }
 }
 

@@ -1,21 +1,5 @@
 const {Move} = require('./board');
 
-class PositionTree {
-  constructor(board, color) {
-    this.children = [];
-    this.board = board;
-    this.color = color;
-  }
-
-  evaluateLevel() {
-    const legalMoves = this.board.getLegalMoves(this.color);
-    for (const legalMove of legalMoves) {
-      const node = new PositionTree(this.board.moveCopy(legalMove), this.color === 'white' ? 'black' : 'white');
-      this.children.push(node);
-    }
-  };
-}
-
 class Bot {
 
   /**
@@ -23,9 +7,42 @@ class Bot {
    * @param {Board} board
    * @param {'black' | 'white'} color
    */
-  constructor(board, color) {
+  constructor(board, color, maxDepth) {
     this.board = board;
     this.color = color;
+    this.maxDepth = maxDepth || 2;
+  }
+
+  minimizeScoreBlack(board, depth) {
+
+  }
+
+  maximizeScoreWhite(board, depth) {
+
+    let bestMoves = [];
+    let bestEvaluation = -Number.MAX_SAFE_INTEGER;
+
+    const legalMoves = board.getLegalMoves();
+
+    for (const legalMove of legalMoves) {
+      const tempBoard = board.copy();
+      tempBoard.move(legalMove);
+      const evaluation = tempBoard.evaluatePosition();
+      if (evaluation > bestEvaluation) {
+        bestEvaluation = evaluation;
+        bestMoves = [legalMove];
+      } else if (evaluation === bestEvaluation) {
+        bestMoves.push(legalMove);
+      }
+    }
+
+    if (depth >= this.maxDepth) {
+      // or win?
+      return bestEvaluation;
+    }
+
+    return this.minimizeScoreBlack(board, depth);
+
   }
 
   /**
@@ -34,7 +51,13 @@ class Bot {
    */
   async getMove() {
 
-    const legalMoves = this.board.getLegalMoves(this.color);
+    if (this.color === 'white') {
+      this.maximizeScoreWhite(this.board, 2);
+    } else {
+      this.minimizeScoreBlack(this.board, 2)
+    }
+
+    const legalMoves = this.board.getLegalMoves();
 
     let bestMoves = [];
     let bestEvaluation;
@@ -46,7 +69,7 @@ class Bot {
 
     for (const legalMove of legalMoves) {
       const tempBoard = this.board.copy();
-      tempBoard.move(legalMove, this.color);
+      tempBoard.move(legalMove);
       const evaluation = tempBoard.evaluatePosition();
       if (this.color === 'white') {
         if (evaluation > bestEvaluation) {
@@ -64,22 +87,6 @@ class Bot {
         }
       }
     }
-
-    // for (const legalMove of legalMoves) {
-    //   // const tempBoard = this.board.moveCopy(legalMove);
-    //   this.board.move(legalMove, this.color);
-    //   console.log(this.board.evaluatePosition());
-    //   this.children.push(legalMove);
-    // }
-
-    // const positionTree = new PositionTree(this.board);
-    // positionTree.buildLevel();
-    //
-    // for (const num of [1,2,3,4]) {
-    //   for (const node of positionTree.children) {
-    //     node.
-    //   }
-    // }
 
     if (bestMoves.length === 0) {
       console.log(this.color)
