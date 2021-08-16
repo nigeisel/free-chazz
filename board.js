@@ -6,6 +6,17 @@ const terminalColorCodes = {
   resetCode: '\u001b[0m',
 }
 
+const guiColors = {
+  blackPiece: 'black',
+  whitePiece: 'white',
+  blackSquare: '#462703',
+  whiteSquare: '#E5B47B',
+  boardFont: '11px Arial',
+  boardFontSmall: '10px Arial',
+  boardFontColorLight: '#462703',
+  boardFontColorDark: '#E5B47B',
+}
+
 class Board {
   #piecesByColorAndField = {
     white: {},
@@ -75,6 +86,61 @@ class Board {
         null;
   }
 
+  draw(ctx, width) {
+    ctx.clearRect(0, 0, width, width);
+
+    const squareSize = width / 8;
+
+    const files = Array.from({ length: 8 }, (_, i) => String.fromCharCode('A'.charCodeAt(0) + i));
+    const ranks = Array.from({ length: 8 }, (_, i) => (i + 1).toString()).reverse();
+
+
+    let squareColor = guiColors.whiteSquare;
+    for (const rank of ranks) {
+      const yPosition = ((rank - 8) * squareSize) * - 1;
+
+      for (const file of files) {
+        const square = Square.parse(file, rank);
+        const piece = this.getPiece(square);
+
+        const xPosition = (square.fileNumeric - 1) * squareSize;
+        ctx.fillStyle = squareColor;
+        ctx.fillRect(xPosition, yPosition, squareSize, squareSize);
+
+        ctx.fillStyle = squareColor === guiColors.whiteSquare ? guiColors.boardFontColorLight : guiColors.boardFontColorDark;
+        ctx.textAlign = 'center';
+        if (file === 'A') {
+          ctx.font = guiColors.boardFont;
+          ctx.fillText(rank + '', squareSize - 5, yPosition + squareSize - 2);
+        }
+        if (rank === "1") {
+          ctx.font = guiColors.boardFontSmall;
+          ctx.fillText(file, xPosition + squareSize - 6, squareSize * 7 + 10);
+        }
+
+        squareColor = squareColor === guiColors.whiteSquare ? guiColors.blackSquare : guiColors.whiteSquare;
+
+        if (piece) {
+          piece.draw(ctx, xPosition, yPosition, squareSize);
+        }
+      }
+      squareColor = squareColor === guiColors.whiteSquare ? guiColors.blackSquare : guiColors.whiteSquare;
+    }
+
+  }
+
+  getSquare(x, y, size) {
+    const squareSize = size / 8;
+    const file = Math.floor(x / squareSize) + 1;
+    const rank = (Math.floor(y / squareSize) * -1) + 8;
+
+    if (file < 1 || file > 8 || rank < 1 || rank > 8) {
+      return null;
+    }
+
+    return Square.parse(file, rank);
+  }
+
   print() {
     // TODO clear before each reprint: https://nodejs.org/api/readline.html#readline_readline_clearline_stream_dir_callback
 
@@ -131,7 +197,6 @@ class Board {
   /**
    * Returns a list of all legal moves for a color in the current position
    *
-   * @param {'white' | 'black'?} color
    * @return {Array.<Move>} list of legal moves
    */
   getLegalMoves() {
@@ -185,16 +250,21 @@ class Board {
    * @return {Boolean} true if the move is legal in current position
    */
   isLegal(triedMove) {
-    const piece = this.getPiece(triedMove.from);
-    if (piece.color !== this.colorTurn) {
-      return false;
-    }
+    return this.getLegalMoves()
+        .some((legalMove) => legalMove.equals(triedMove));
 
-    return piece
-        .getLegalMoves(this, triedMove.from)
-        .some((legalMove) => {
-          return legalMove.equals(triedMove)
-        });
+    // const piece = this.getPiece(triedMove.from);
+    // if (piece.color !== this.colorTurn) {
+    //   return false;
+    // }
+    //
+    // // TODO does not look for checks
+    //
+    // return piece
+    //     .getLegalMoves(this, triedMove.from)
+    //     .some((legalMove) => {
+    //       return legalMove.equals(triedMove)
+    //     });
   }
 
   /**
@@ -435,6 +505,17 @@ class Piece {
     return new this.constructor(this.color);
   }
 
+  draw(ctx, x, y, size) {
+    ctx.font = size + 'px Arial';
+    ctx.textAlign = 'center';
+
+    if (this.color === 'white') {
+      ctx.fillStyle = guiColors.whitePiece;
+    } else {
+      ctx.fillStyle = guiColors.blackPiece;
+    }
+  }
+
   /**
    * Return all legal Moves for the Piece in the current position
    *
@@ -572,7 +653,7 @@ class Piece {
       }
     }
 
-    for (let moveRank = square.rank - 1; moveRank >= 8; moveRank--) {
+    for (let moveRank = square.rank - 1; moveRank >= 1; moveRank--) {
       const targetSquare = Square.parse(square.fileNumeric, moveRank);
       const piece = board.getPiece(targetSquare);
       if (piece === null) {
@@ -605,6 +686,11 @@ class Pawn extends Piece {
     const copy = super.copy();
     copy.hasMovedLastMove = this.hasMovedLastMove;
     return copy;
+  }
+
+  draw(ctx, x, y, size) {
+    super.draw(ctx, x, y, size);
+    ctx.fillText('\u{265F}', x + (size / 2), y + (size / 1.2));
   }
 
   print() {
@@ -671,6 +757,11 @@ class Bishop extends Piece {
     this.value = 3;
   }
 
+  draw(ctx, x, y, size) {
+    super.draw(ctx, x, y, size);
+    ctx.fillText('\u{265D}', x + (size / 2), y + (size / 1.2));
+  }
+
   print() {
     if (this.color === 'white') {
       process.stdout.write(terminalColorCodes.whitePiece);
@@ -698,6 +789,11 @@ class Knight extends Piece {
   constructor(color) {
     super(color);
     this.value = 3;
+  }
+
+  draw(ctx, x, y, size) {
+    super.draw(ctx, x, y, size);
+    ctx.fillText('\u{265E}', x + (size / 2), y + (size / 1.2));
   }
 
   print() {
@@ -750,6 +846,11 @@ class Rook extends Piece {
     this.value = 5;
   }
 
+  draw(ctx, x, y, size) {
+    super.draw(ctx, x, y, size);
+    ctx.fillText('\u{265C}', x + (size / 2), y + (size / 1.2));
+  }
+
   print() {
     if (this.color === 'white') {
       process.stdout.write(terminalColorCodes.whitePiece);
@@ -776,6 +877,11 @@ class Queen extends Piece {
   constructor(color) {
     super(color);
     this.value = 9;
+  }
+
+  draw(ctx, x, y, size) {
+    super.draw(ctx, x, y, size);
+    ctx.fillText('\u{265B}', x + (size / 2), y + (size / 1.2));
   }
 
   print() {
@@ -805,6 +911,11 @@ class King extends Piece {
   constructor(color) {
     super(color);
     this.value = 1000;
+  }
+
+  draw(ctx, x, y, size) {
+    super.draw(ctx, x, y, size);
+    ctx.fillText('\u{265A}', x + (size / 2), y + (size / 1.2));
   }
 
   print() {

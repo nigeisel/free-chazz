@@ -1,4 +1,4 @@
-const {Move} = require('./board');
+// const {Move} = require('./board');
 
 class Bot {
 
@@ -10,39 +10,76 @@ class Bot {
   constructor(board, color, maxDepth) {
     this.board = board;
     this.color = color;
-    this.maxDepth = maxDepth || 2;
+    this.maxDepth = maxDepth || 5;
   }
 
-  minimizeScoreBlack(board, depth) {
+  // maximize(board, depth) {
+  //   if (depth >= this.maxDepth) {
+  //     return board.evaluatePosition();
+  //   }
+  //
+  //   const boards = board.getLegalMoves().map((move) => {
+  //     const tempBoard = board.copy();
+  //     tempBoard.move(move);
+  //     return tempBoard;
+  //   });
+  //
+  //   return Math.max(...boards.map((board) => this.minimize(board, ++depth)));
+  // }
 
-  }
+  maximize(board, move, depth) {
+    // TODO return infinity on win, zero on stalemate
+    // TODO a-b pruning
+    // TODO monitor performance + and optimize, use multiple cores, measure time.
+    // TODO return multiple equal moves
 
-  maximizeScoreWhite(board, depth) {
-
-    let bestMoves = [];
-    let bestEvaluation = -Number.MAX_SAFE_INTEGER;
-
-    const legalMoves = board.getLegalMoves();
-
-    for (const legalMove of legalMoves) {
-      const tempBoard = board.copy();
-      tempBoard.move(legalMove);
-      const evaluation = tempBoard.evaluatePosition();
-      if (evaluation > bestEvaluation) {
-        bestEvaluation = evaluation;
-        bestMoves = [legalMove];
-      } else if (evaluation === bestEvaluation) {
-        bestMoves.push(legalMove);
-      }
+    this.nodesVisited++;
+    let tempBoard = board;
+    if (move) {
+      tempBoard = board.copy();
+      tempBoard.move(move);
     }
 
     if (depth >= this.maxDepth) {
-      // or win?
-      return bestEvaluation;
+      return {move: move, score: tempBoard.evaluatePosition()};
     }
 
-    return this.minimizeScoreBlack(board, depth);
+    depth++;
+    const maxResult = tempBoard.getLegalMoves()
+        .map(move => this.minimize(tempBoard, move, depth))
+        .reduce((prev, curr) => prev.score > curr.score ? prev : curr);
 
+    return {move: move || maxResult.move, score: maxResult.score}
+  }
+
+  minimize(board, move, depth) {
+    this.nodesVisited++;
+
+    let tempBoard = board;
+    if (move) {
+      tempBoard = board.copy();
+      tempBoard.move(move);
+    }
+
+    if (depth >= this.maxDepth) {
+      return {move: move, score: tempBoard.evaluatePosition()};
+    }
+
+    depth++;
+    const minResult = tempBoard.getLegalMoves()
+        .map(move => this.maximize(tempBoard, move, depth))
+        .reduce((prev, curr) => prev.score < curr.score ? prev : curr);
+
+    return {move: move || minResult.move, score: minResult.score}
+  }
+
+  getMoveImproved() {
+    this.nodesVisited = 0;
+    if (this.color === 'white') {
+      return this.maximize(this.board, null,1).move;
+    } else {
+      return this.minimize(this.board, null,1).move;
+    }
   }
 
   /**
@@ -51,11 +88,11 @@ class Bot {
    */
   async getMove() {
 
-    if (this.color === 'white') {
-      this.maximizeScoreWhite(this.board, 2);
-    } else {
-      this.minimizeScoreBlack(this.board, 2)
-    }
+    // if (this.color === 'white') {
+    //   this.maximizeScoreWhite(this.board, 2);
+    // } else {
+    //   this.minimizeScoreBlack(this.board, 2)
+    // }
 
     const legalMoves = this.board.getLegalMoves();
 

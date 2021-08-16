@@ -27,25 +27,25 @@ class Game {
 
     await new Promise(resolve => setTimeout(resolve, 500));
     if (this.board.colorTurn === 'white') {
-      const readline = require('readline');
-
-      const rl = readline.createInterface({
-        input: process.stdin,
-        output: process.stdout
-      });
-
-      return new Promise((resolve, reject) => {
-        rl.question(this.board.colorTurn + '\'s move: ', (move) => {
-          rl.close();
-          try {
-            const moveParsed = Move.parse(move);
-            return resolve(moveParsed);
-          } catch (err) {
-            return reject(err);
-          }
-        });
-      });
-      // return this.bot2.getMove();
+      // const readline = require('readline');
+      //
+      // const rl = readline.createInterface({
+      //   input: process.stdin,
+      //   output: process.stdout
+      // });
+      //
+      // return new Promise((resolve, reject) => {
+      //   rl.question(this.board.colorTurn + '\'s move: ', (move) => {
+      //     rl.close();
+      //     try {
+      //       const moveParsed = Move.parse(move);
+      //       return resolve(moveParsed);
+      //     } catch (err) {
+      //       return reject(err);
+      //     }
+      //   });
+      // });
+      return this.bot2.getMove();
     } else {
       return this.bot.getMove();
     }
